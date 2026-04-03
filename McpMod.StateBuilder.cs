@@ -60,7 +60,7 @@ public static partial class McpMod
         }
 
         // Overlays can appear on top of any room (events, rest sites, combat).
-        // Rewards/card-reward overlays defer to the map — they may linger on the
+        // Rewards/card-reward overlays defer to the map - they may linger on the
         // overlay stack while the map opens after the player clicks proceed.
         var topOverlay = NOverlayStack.Instance?.Peek();
         var currentRoom = runState.CurrentRoom;
@@ -104,7 +104,7 @@ public static partial class McpMod
                  && topOverlay is not NRewardsScreen
                  && topOverlay is not NCardRewardSelectionScreen)
         {
-            // Catch-all for unhandled overlays — prevents soft-locks
+            // Catch-all for unhandled overlays - prevents soft-locks
             result["state_type"] = "overlay";
             result["overlay"] = new Dictionary<string, object?>
             {
@@ -132,7 +132,7 @@ public static partial class McpMod
             }
             else
             {
-                // After combat ends — reward/card overlays are caught by top-level checks above.
+                // After combat ends - reward/card overlays are caught by top-level checks above.
                 // Only handle map and the brief transition before rewards appear.
                 if (NMapScreen.Instance is { IsOpen: true })
                 {
@@ -282,7 +282,7 @@ public static partial class McpMod
         state["block"] = creature.Block;
 
         // PlayerCombatState can linger after combat while on map/rest/shop. Energy/MaxEnergy getters
-        // run hooks (e.g. Hook.ModifyMaxEnergy) that null-ref without a live combat — only serialize
+        // run hooks (e.g. Hook.ModifyMaxEnergy) that null-ref without a live combat - only serialize
         // combat fields when a fight is actually in progress.
         if (combatState != null && CombatManager.Instance.IsInProgress)
         {
@@ -395,25 +395,19 @@ public static partial class McpMod
         return state;
     }
 
+    private static string GetCostDisplay(CardModel card)
+        => card.EnergyCost.CostsX ? "X" : card.EnergyCost.GetAmountToSpend().ToString();
+
+    private static string? GetStarCostDisplay(CardModel card)
+    {
+        if (card.HasStarCostX) return "X";
+        if (card.CurrentStarCost >= 0) return card.GetStarCostWithModifiers().ToString();
+        return null;
+    }
+
     private static Dictionary<string, object?> BuildCardState(CardModel card, int index)
     {
-        string costDisplay;
-        if (card.EnergyCost.CostsX)
-            costDisplay = "X";
-        else
-        {
-            int cost = card.EnergyCost.GetAmountToSpend();
-            costDisplay = cost.ToString();
-        }
-
         card.CanPlay(out var unplayableReason, out _);
-
-        // Star cost (The Regent's cards; CanonicalStarCost >= 0 means card has a star cost)
-        string? starCostDisplay = null;
-        if (card.HasStarCostX)
-            starCostDisplay = "X";
-        else if (card.CurrentStarCost >= 0)
-            starCostDisplay = card.GetStarCostWithModifiers().ToString();
 
         return new Dictionary<string, object?>
         {
@@ -421,8 +415,8 @@ public static partial class McpMod
             ["id"] = card.Id.Entry,
             ["name"] = card.Title,
             ["type"] = card.Type.ToString(),
-            ["cost"] = costDisplay,
-            ["star_cost"] = starCostDisplay,
+            ["cost"] = GetCostDisplay(card),
+            ["star_cost"] = GetStarCostDisplay(card),
             ["description"] = SafeGetCardDescription(card),
             ["target_type"] = card.TargetType.ToString(),
             ["can_play"] = unplayableReason == UnplayableReason.None,
@@ -449,6 +443,8 @@ public static partial class McpMod
             list.Add(new Dictionary<string, object?>
             {
                 ["name"] = SafeGetText(() => card.Title),
+                ["cost"] = GetCostDisplay(card),
+                ["star_cost"] = GetStarCostDisplay(card),
                 ["description"] = SafeGetCardDescription(card, pile)
             });
         }
@@ -590,7 +586,7 @@ public static partial class McpMod
 
         if (fakeMerchant.StartedFight)
         {
-            // After the foul potion fight, merchant is gone — just show proceed
+            // After the foul potion fight, merchant is gone - just show proceed
             state["shop"] = new Dictionary<string, object?>
             {
                 ["items"] = new List<Dictionary<string, object?>>(),
@@ -733,6 +729,7 @@ public static partial class McpMod
                 item["card_name"] = SafeGetText(() => card.Title);
                 item["card_type"] = card.Type.ToString();
                 item["card_rarity"] = card.Rarity.ToString();
+                item["card_star_cost"] = GetStarCostDisplay(card);
                 item["card_description"] = SafeGetCardDescription(card, PileType.None);
                 item["keywords"] = BuildHoverTips(card.HoverTips);
             }
@@ -835,7 +832,7 @@ public static partial class McpMod
         }
         state["visited"] = visited;
 
-        // Next options — read travelable state from UI nodes
+        // Next options - read travelable state from UI nodes
         var nextOptions = new List<Dictionary<string, object?>>();
         var mapScreen = NMapScreen.Instance;
         if (mapScreen != null)
@@ -874,7 +871,7 @@ public static partial class McpMod
         }
         state["next_options"] = nextOptions;
 
-        // Full map — all nodes organized for planning
+        // Full map - all nodes organized for planning
         var nodes = new List<Dictionary<string, object?>>();
 
         // Starting point
@@ -941,6 +938,7 @@ public static partial class McpMod
             {
                 item["potion_id"] = potionReward.Potion.Id.Entry;
                 item["potion_name"] = SafeGetText(() => potionReward.Potion.Title);
+                item["potion_description"] = SafeGetText(() => potionReward.Potion.DynamicDescription);
             }
 
             items.Add(item);
@@ -967,24 +965,14 @@ public static partial class McpMod
             var card = holder.CardModel;
             if (card == null) continue;
 
-            string costDisplay = card.EnergyCost.CostsX
-                ? "X"
-                : card.EnergyCost.GetAmountToSpend().ToString();
-
-            string? starCostDisplay = null;
-            if (card.HasStarCostX)
-                starCostDisplay = "X";
-            else if (card.CurrentStarCost >= 0)
-                starCostDisplay = card.GetStarCostWithModifiers().ToString();
-
             cards.Add(new Dictionary<string, object?>
             {
                 ["index"] = index,
                 ["id"] = card.Id.Entry,
                 ["name"] = SafeGetText(() => card.Title),
                 ["type"] = card.Type.ToString(),
-                ["cost"] = costDisplay,
-                ["star_cost"] = starCostDisplay,
+                ["cost"] = GetCostDisplay(card),
+                ["star_cost"] = GetStarCostDisplay(card),
                 ["description"] = SafeGetCardDescription(card, PileType.None),
                 ["rarity"] = card.Rarity.ToString(),
                 ["is_upgraded"] = card.IsUpgraded,
@@ -1024,7 +1012,7 @@ public static partial class McpMod
             state["prompt"] = prompt;
         }
 
-        // Cards in the grid (sorted by visual position — MoveToFront can reorder children)
+        // Cards in the grid (sorted by visual position - MoveToFront can reorder children)
         var cardHolders = FindAllSortedByPosition<NGridCardHolder>(screen);
         var cards = new List<Dictionary<string, object?>>();
         int index = 0;
@@ -1039,7 +1027,8 @@ public static partial class McpMod
                 ["id"] = card.Id.Entry,
                 ["name"] = SafeGetText(() => card.Title),
                 ["type"] = card.Type.ToString(),
-                ["cost"] = card.EnergyCost.CostsX ? "X" : card.EnergyCost.GetAmountToSpend().ToString(),
+                ["cost"] = GetCostDisplay(card),
+                ["star_cost"] = GetStarCostDisplay(card),
                 ["description"] = SafeGetCardDescription(card, PileType.None),
                 ["rarity"] = card.Rarity.ToString(),
                 ["is_upgraded"] = card.IsUpgraded,
@@ -1063,7 +1052,7 @@ public static partial class McpMod
         var closeButton = screen.GetNodeOrNull<NBackButton>("%Close");
         state["can_cancel"] = closeButton?.IsEnabled ?? false;
 
-        // Confirm button — search all preview containers and main screen
+        // Confirm button - search all preview containers and main screen
         bool canConfirm = false;
         foreach (var container in new[] { previewSingle, previewMulti, previewGeneric })
         {
@@ -1112,7 +1101,8 @@ public static partial class McpMod
                 ["id"] = card.Id.Entry,
                 ["name"] = SafeGetText(() => card.Title),
                 ["type"] = card.Type.ToString(),
-                ["cost"] = card.EnergyCost.CostsX ? "X" : card.EnergyCost.GetAmountToSpend().ToString(),
+                ["cost"] = GetCostDisplay(card),
+                ["star_cost"] = GetStarCostDisplay(card),
                 ["description"] = SafeGetCardDescription(card, PileType.None),
                 ["rarity"] = card.Rarity.ToString(),
                 ["is_upgraded"] = card.IsUpgraded,
@@ -1152,7 +1142,8 @@ public static partial class McpMod
                     ["id"] = card.Id.Entry,
                     ["name"] = SafeGetText(() => card.Title),
                     ["type"] = card.Type.ToString(),
-                    ["cost"] = card.EnergyCost.CostsX ? "X" : card.EnergyCost.GetAmountToSpend().ToString(),
+                    ["cost"] = GetCostDisplay(card),
+                    ["star_cost"] = GetStarCostDisplay(card),
                     ["description"] = SafeGetCardDescription(card, PileType.None),
                     ["rarity"] = card.Rarity.ToString(),
                     ["is_upgraded"] = card.IsUpgraded,
@@ -1191,7 +1182,8 @@ public static partial class McpMod
                     ["id"] = card.Id.Entry,
                     ["name"] = SafeGetText(() => card.Title),
                     ["type"] = card.Type.ToString(),
-                    ["cost"] = card.EnergyCost.CostsX ? "X" : card.EnergyCost.GetAmountToSpend().ToString(),
+                    ["cost"] = GetCostDisplay(card),
+                    ["star_cost"] = GetStarCostDisplay(card),
                     ["description"] = SafeGetCardDescription(card, PileType.None),
                     ["rarity"] = card.Rarity.ToString(),
                     ["is_upgraded"] = card.IsUpgraded,
@@ -1247,7 +1239,8 @@ public static partial class McpMod
                 ["id"] = card.Id.Entry,
                 ["name"] = SafeGetText(() => card.Title),
                 ["type"] = card.Type.ToString(),
-                ["cost"] = card.EnergyCost.CostsX ? "X" : card.EnergyCost.GetAmountToSpend().ToString(),
+                ["cost"] = GetCostDisplay(card),
+                ["star_cost"] = GetStarCostDisplay(card),
                 ["description"] = SafeGetCardDescription(card),
                 ["is_upgraded"] = card.IsUpgraded,
                 ["keywords"] = BuildHoverTips(card.HoverTips)
@@ -1523,7 +1516,7 @@ public static partial class McpMod
                     ["keywords"] = BuildHoverTips(extraTips)
                 });
             }
-            catch { /* skip this power — game engine state may be inconsistent */ }
+            catch { /* skip this power - game engine state may be inconsistent */ }
         }
         return powers;
     }
