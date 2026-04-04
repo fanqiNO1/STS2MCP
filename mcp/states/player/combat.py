@@ -21,9 +21,9 @@ class CombatPlayerState(BaseModel):
     discard_pile: PileCards
     exhaust_pile: PileCards
     # orbs
-    orbs: list[Orb]
-    orb_slots: int
-    orb_empty_slots: int
+    orbs: list[Orb] | None = None
+    orb_slots: int | None = None
+    orb_empty_slots: int | None = None
 
     def hand_to_markdown(self) -> str:
         """Convert the hand to a markdown string."""

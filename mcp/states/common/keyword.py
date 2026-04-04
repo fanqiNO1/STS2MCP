@@ -33,7 +33,6 @@ class Keywords(BaseModel):
         lines.append("## Keyword Glossary\n")
         for keyword in self.keywords.values():
             lines.append(f"- {keyword.to_markdown()}\n")
-        lines.append("\n")
         return "".join(lines)
 
     @model_validator(mode="before")
@@ -51,7 +50,8 @@ def _get_keywords(state, keywords: Keywords) -> Keywords:
     if isinstance(state, Keywords):
         keywords += state
     elif isinstance(state, BaseModel):
-        for value in state.model_dump().values():
+        # iterate field values directly to preserve pydantic types
+        for _field_name, value in state:
             keywords = _get_keywords(value, keywords)
     elif isinstance(state, (list, tuple)):
         for item in state:

@@ -6,7 +6,7 @@ class PileCard(BaseModel):
 
     name: str
     description: str
-    cost: str
+    cost: str | None = None
     star_cost: str | None = None
 
     def to_markdown(self) -> str:
