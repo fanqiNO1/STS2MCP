@@ -2,6 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from states.common.status_effect import StatusEffect
+
 
 class Intent(BaseModel):
     """The intent of the enemy."""
@@ -21,7 +23,7 @@ class Enemy(BaseModel):
     hp: int
     max_hp: int
     block: int
-    status: 
+    status: list[StatusEffect]
     intents: list[Intent]
 
 
@@ -38,4 +40,5 @@ class CombatState(BaseModel):
     """The state when the scenario is in the combat (monster or elite or boss)."""
 
     state_type: Literal["monster", "elite", "boss"]
-    battle: BattleState
+    message: str | None = None
+    battle: BattleState | None = None
