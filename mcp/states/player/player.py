@@ -74,3 +74,17 @@ class PlayerState(BaseModel):
             lines.append(cs.piles_to_markdown())
             lines.append(cs.orbs_to_markdown())
         return "".join(lines)
+
+    @model_validator(mode="before")
+    @classmethod
+    def from_json_state(cls, json_state: dict) -> dict:
+        player_state = dict()
+        combat_state = dict()
+
+        for key, value in json_state.items():
+            if key in ["character", "hp", "max_hp", "block", "gold", "status", "relics", "potions"]:
+                player_state[key] = value
+            else:
+                combat_state[key] = value
+        player_state["combat_state"] = combat_state if combat_state else None
+        return player_state
