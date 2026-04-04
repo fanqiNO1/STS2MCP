@@ -40,5 +40,5 @@ class Keywords(BaseModel):
         """Create a keywords dict from a list of keyword dicts."""
         keywords = dict()
         for keyword in keyword_list:
-            keywords[keyword["name"]] = keyword
+            keywords[keyword["name"]] = Keyword.model_validate(keyword)
         return {"keywords": keywords}

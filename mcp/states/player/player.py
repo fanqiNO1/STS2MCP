@@ -1,5 +1,8 @@
 from pydantic import BaseModel, model_validator
 
+from states.common.potion import Potion
+from states.common.relic import Relics
+from states.common.status_effect import StatusEffect
 from states.player.combat import CombatPlayerState
 
 
@@ -17,6 +20,6 @@ class PlayerState(BaseModel):
     combat_state: CombatPlayerState | None = None
 
     # always present fields
-    status: 
-    relics: 
-    potions: 
+    status: list[StatusEffect]
+    relics: Relics
+    potions: list[Potion]

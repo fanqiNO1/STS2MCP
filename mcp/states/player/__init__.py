@@ -1,3 +1,3 @@
-from states.player import PlayerState
+from states.player.player import PlayerState
 
 __all__ = ["PlayerState"]

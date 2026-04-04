@@ -26,7 +26,7 @@ class Event(BaseModel):
     event_name: str
     is_ancient: bool
     in_dialogue: bool
-    body: str
+    body: str | None
     options: list[EventOption]
 
 
