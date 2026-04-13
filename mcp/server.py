@@ -9,6 +9,7 @@ import asyncio
 import json
 import sys
 
+import httpx
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("sts2")
